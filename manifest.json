@@ -1,0 +1,16 @@
+{
+  "name": "BECO · Descargas Parciales",
+  "short_name": "BECO DP",
+  "description": "Seguimiento de descargas parciales en línea de los generadores BECO (IRIS Power / IEEE 1434).",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F3F0",
+  "theme_color": "#1F3864",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
