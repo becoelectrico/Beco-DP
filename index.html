@@ -174,6 +174,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .iris-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--navy2);background:#fff;color:var(--navy);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .iris-btn:hover{background:var(--navy);color:#fff}
 .iris-miss{font-size:11px;color:var(--text3);font-style:italic;white-space:nowrap}
+.iris-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem}
+.iris-lbl{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em}
+.iris-bar .iris-sel{width:auto;flex:0 0 auto;min-width:220px;padding:6px 10px;font-size:12px}
+.iris-count{margin-left:auto;font-size:11px;color:var(--text3)}
 .page-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
 .btn-inf{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-inf:hover{background:var(--navy2)}
@@ -854,19 +858,35 @@ function renderComparativa(gk, cg){
 // ════════════════════════════════════════════════════════════
 function nombreIris(c, gk){ return lecGen(c, gk)?.reporte_iris || `IRIS_${gk}_${c.k}.pdf`; }
 
+function irisDisponibles(gk){
+  return CAMPANAS.filter(c => lecGen(c, gk) && c.archivos[nombreIris(c, gk)]).reverse();
+}
+
 function renderIris(gk, cg){
-  const serie = CAMPANAS.filter(c => lecGen(c, gk)).reverse();
-  const conPdf = serie.filter(c => c.archivos[nombreIris(c, gk)]).length;
-  return `<div class="analysis-card" style="margin-bottom:1.25rem">
-    <div class="analysis-card-header">Reportes IRIS originales <span style="font-size:10px;opacity:.8">${conPdf} de ${serie.length} cargados</span></div>
-    <div class="analysis-card-body"><div class="iris-list">
-      ${serie.map(c => {
-        const n = nombreIris(c, gk), ok = !!c.archivos[n];
-        return `<div class="iris-row ${c.k === cg.k ? 'actual' : ''}">
-          <span><b>${esc(etiqueta(c))}</b>${c.k === cg.k ? ' · lectura mostrada' : ''}<br><span style="font-size:11px;color:var(--text3)">${esc(n)}</span></span>
-          ${ok ? `<button class="iris-btn" onclick="verIris('${c.k}','${esc(n)}')">Ver PDF</button>` : '<span class="iris-miss">No cargado aún</span>'}
-        </div>`; }).join('')}
-    </div></div></div>`;
+  const total = CAMPANAS.filter(c => lecGen(c, gk)).length;
+  const disp = irisDisponibles(gk);
+  const sel = disp.find(c => c.k === cg.k) || disp[0];
+  const g = gk.slice(1);
+  return `<div class="iris-bar">
+    <span class="iris-lbl">Reporte IRIS original</span>
+    ${disp.length ? `
+      <select class="m-select iris-sel" id="iris-sel-${g}">
+        ${disp.map(c => `<option value="${c.k}" ${c === sel ? 'selected' : ''}>${esc(etiqueta(c))}${c.k === cg.k ? ' · lectura mostrada' : ''}</option>`).join('')}
+      </select>
+      <button class="iris-btn" onclick="verIrisSel('${gk}')">Ver PDF</button>`
+    : '<span class="iris-miss">Ningún PDF cargado todavía</span>'}
+    <span class="iris-count">${disp.length} de ${total} cargados</span>
+  </div>`;
+}
+
+function verIrisSel(gk){
+  const k = document.getElementById('iris-sel-' + gk.slice(1)).value;
+  verIris(k, nombreIris(camp(k), gk));
+}
+
+function btnIrisActual(gk, cg){
+  const n = nombreIris(cg, gk);
+  return cg.archivos[n] ? `<button class="iris-btn" style="margin-left:8px" onclick="verIris('${cg.k}','${esc(n)}')">📄 IRIS</button>` : '';
 }
 
 async function verIris(k, nombre){
@@ -928,7 +948,7 @@ function renderGen(g){
     <div class="page-actions"><button class="back-btn" style="padding:0" onclick="showHome()">← Volver al resumen general</button>
       <button class="btn-inf" onclick="abrirInforme('gen', ${g})">📄 Informe del Generador ${g}</button></div>
     ${aviso}${sinAn}
-    <div class="sec-title"><span>Generador ${g}</span> — indicadores principales · ${esc(fechaLarga(cg))}</div>
+    <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span><span style="color:var(--navy)">Generador ${g}</span> — indicadores principales · ${esc(fechaLarga(cg))}</span>${btnIrisActual(gk, cg)}</div>
     <div class="gen-kpi-strip">
       ${FASES.map(f => `<div class="gen-kpi highlight"><div class="gen-kpi-label">Fase ${f} — Qm+</div>
         <div class="gen-kpi-val">${v(L.maquina[f].qm_pos)}<span class="gen-kpi-unit"> mV</span></div>
