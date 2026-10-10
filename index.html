@@ -247,6 +247,8 @@ const BASE_PATH = 'Manto_Electrico/Descargas_Parciales';
 const DOMINIO   = 'beco.hn';
 const SCOPES    = ['Files.ReadWrite','User.Read','Mail.Send'];
 const PIN_KEY   = 'dp_pin_ok';
+// Siempre la URL de la carpeta (sin index.html): así solo hay que registrar UNA en Azure
+const APP_URL   = window.location.origin + window.location.pathname.replace(/index\.html$/i, '');
 
 const GK = ['G1','G2','G3'];
 const FASES = ['A','B','C'];
@@ -267,7 +269,7 @@ function gateMsg(t, err){ const m=document.getElementById('gate-msg'); m.textCon
 async function initMsal(){
   msalApp = new msal.PublicClientApplication({
     auth:{ clientId:CLIENT_ID, authority:`https://login.microsoftonline.com/${TENANT_ID}`,
-           redirectUri: window.location.origin + window.location.pathname },
+           redirectUri: APP_URL },
     cache:{ cacheLocation:'localStorage' }
   });
   await msalApp.initialize();
@@ -288,7 +290,7 @@ function loginMS(){ msalApp.loginRedirect({ scopes:SCOPES, prompt:'select_accoun
 
 function logout(){
   sessionStorage.removeItem(PIN_KEY);
-  if (account) msalApp.logoutRedirect({ account, postLogoutRedirectUri: window.location.origin + window.location.pathname });
+  if (account) msalApp.logoutRedirect({ account, postLogoutRedirectUri: APP_URL });
   else location.reload();
 }
 
