@@ -269,6 +269,7 @@ input[type=checkbox]{accent-color:var(--navy);width:15px;height:15px;cursor:poin
           <div class="corp-meta-label">Lectura mostrada</div>
           <div class="corp-meta-value" id="hdr-fecha">—</div>
         </div>
+        <button class="hdr-btn" onclick="descargarPaquete()" title="Archivo para generar los JSON de una lectura nueva en Claude">📦 Paquete para análisis</button>
         <button class="hdr-btn" onclick="abrirSubir()" title="Subir una lectura nueva o PDF de IRIS">⬆ Subir lectura</button>
         <button class="hdr-btn" onclick="recargar()" title="Volver a leer OneDrive">⟳ Recargar</button>
         <button class="hdr-btn" onclick="logout()">Salir</button>
@@ -1631,6 +1632,82 @@ async function confirmarSubida(){
     subMsg('Error: ' + e.message + '. Revisa la carpeta en OneDrive antes de reintentar.', 'err');
     btn.disabled = false;
   }
+}
+
+
+// ════════════════════════════════════════════════════════════
+// PAQUETE PARA ANÁLISIS (un solo archivo para cualquier chat de Claude)
+// ════════════════════════════════════════════════════════════
+const INSTRUCCIONES_DP = `# PAQUETE PARA ANÁLISIS DE DESCARGAS PARCIALES — BECO
+
+Eres el asistente que prepara los datos de una NUEVA lectura de descargas parciales (IRIS Power) de los generadores G1, G2 y G3 de BECO (Bijao Electric Company). El usuario adjuntó este paquete y los PDF de IRIS de la lectura nueva (uno por generador).
+
+Este paquete trae:
+- Estas instrucciones.
+- La LECTURA ANTERIOR (lectura.json + analisis.json): contra ella se compara y además sirve de EJEMPLO EXACTO del formato.
+- La LÍNEA BASE (lectura.json de Sep 2025): contra ella se compara la tendencia de largo plazo.
+
+## Qué debes hacer, en este orden
+1. Leer los PDF de IRIS y extraer los valores (ver "lectura.json").
+2. Mostrar al usuario una TABLA en texto con los valores extraídos por generador y fase (temperatura, Qm+, Qm−, NQN+, NQN−, Total System y banderas) para que los verifique contra el PDF. Señalar cualquier dato ilegible o faltante; NUNCA inventar ni suponer valores.
+3. Mostrar en texto el ANÁLISIS por generador siguiendo la metodología de abajo.
+4. Cuando el usuario confirme, entregar DOS archivos descargables: lectura.json y analisis.json, con exactamente la misma estructura y nombres de campo que los del paquete.
+5. Recordar al usuario que los suba en la app con el botón "Subir lectura", junto con los 3 PDF de IRIS.
+
+Si el usuario pide ir directo, puedes entregar los archivos sin esperar confirmación, pero siempre muestra la tabla de valores.
+
+## lectura.json — solo números
+- "version": 1
+- "campana": "AAAA-MM" (año y mes de la lectura).
+- "fecha_lectura": "AAAA-MM-DD" (fecha real del PDF). "fecha_exacta": true.
+- "etiqueta": mes abreviado en español + año: Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic (ej. "Sep 2026").
+- "generadores": { "G1": {...}, "G2": {...}, "G3": {...} }. Cada uno con:
+  - "temp_estator": °C, número entero.
+  - "estado_alarma": bandera de la máquina tal como la reporta IRIS (Good, POVRL, OVR*, OVR+POVRL, POVRL*…).
+  - "maquina": { "A": {"qm_pos","qm_neg","nqn_pos","nqn_neg"}, "B": {...}, "C": {...} } → valores del devanado. Qm en mV.
+  - "sistema": { "A": {"qm_pos","qm_neg","nqn_pos","nqn_neg","estado"}, "B": {...}, "C": {...} } → Total System.
+  - "reporte_iris": "IRIS_G1_AAAA-MM.pdf" (G2, G3 igual).
+- Todos los valores numéricos son números (no texto). Dato inexistente → null. Generador no medido → se omite.
+
+## analisis.json — solo interpretación
+- "version": 1, "campana": "AAAA-MM", "completo": true
+- "comentario_resumen": párrafo general de los 3 generadores (se permite <strong> para resaltar).
+- "generadores": por cada generador:
+  - "nivel_preocupacion": Bajo | Moderado | Moderado-Alto | Alto
+  - "restriccion_operativa" (ej. "No se requiere"), "proxima_prueba" (ej. "Dentro de 3 meses")
+  - "resumen_corto": máximo ~30 caracteres para la tabla de historial (ej. "FC 521 mV ↓ POVRL").
+  - "tendencia": [{ "fase":"A", "texto":"..." }, B, C] → con valores concretos, % de cambio y temperatura.
+  - "polaridad": [{ "fase", "pred", "nivel": bajo|medio|alto|critico, "mecanismo" }] → SIN valores Qm ni ratio (la app los calcula).
+  - "fuentes": [{ "nombre", "polaridad", "angulo", "efecto_carga", "efecto_temp", "severidad", "tipo": ok|warn|danger, "descripcion" }]
+  - "sistema": [{ "fase", "nivel": ok|warn|danger, "interpretacion" }] → SIN valores (la app los toma de lectura.json).
+  - "acciones": ["...", "..."] → concretas, para la próxima parada.
+
+## Metodología (IRIS Power / IEEE 1434)
+1. Tendencia: cada fase contra la lectura anterior y contra la línea base. Calcular Δ en mV y %. Menos de ±10 % = variación normal; 10–25 % = vigilar; más de 25 % (o duplicación) = tendencia significativa.
+2. Temperatura: comparar a condiciones similares. Si cambió más de 3 °C, decirlo: el stress grading aumenta con la temperatura y los vacíos internos disminuyen.
+3. Qm = severidad del peor punto; NQN = extensión. Qm sube sin NQN → problema localizado; NQN sube → se extiende.
+4. Polaridad (ratio Qm+/Qm−): ≥ 2.0 positiva muy marcada (crítico); ≥ 1.4 positiva marcada (superficie/ranura, stress grading); ≈ 1.0 vacíos internos / envejecimiento térmico; < 1.0 lado del conductor.
+5. Patrón PRPD: ~225° positivo → stress grading / descarga en ranura; 45° y 225° simétrico → vacíos internos; 15°, 75°, 195°, 255° → interfásica.
+6. Total System: banderas OVR/POVRL o valores altos = fuente externa (busduct, pararrayos, conexiones), no del devanado. Marcar "NUEVO" si aparece por primera vez.
+7. Conclusión por generador: nivel de preocupación, restricción operativa, próxima prueba y acciones.
+`;
+
+function descargarPaquete(){
+  if (!CAMPANAS.length) { alert('Primero deben cargar las campañas.'); return; }
+  // Lectura anterior = la más reciente que tenga análisis completo
+  const ant = [...CAMPANAS].reverse().find(c => c.analisis?.completo) || CAMPANAS.at(-1);
+  const base = camp(BASE_K);
+  const bloque = (t, o) => `\n\n## ${t}\n\n\`\`\`json\n${JSON.stringify(o, null, 2)}\n\`\`\``;
+  let txt = INSTRUCCIONES_DP +
+    `\n\n---\n# DATOS\n\nLectura anterior: ${etiqueta(ant)} (${ant.lectura.fecha_lectura}). Línea base: ${base ? etiqueta(base) : 'no disponible'}.` +
+    bloque(`LECTURA ANTERIOR — lectura.json (${etiqueta(ant)})`, ant.lectura) +
+    (ant.analisis ? bloque(`LECTURA ANTERIOR — analisis.json (${etiqueta(ant)})`, ant.analisis) : '\n\n(La lectura anterior no tiene analisis.json)') +
+    (base && base.k !== ant.k ? bloque(`LÍNEA BASE — lectura.json (${etiqueta(base)})`, base.lectura) : '') +
+    `\n\n---\nPaquete generado desde la app BECO · Descargas Parciales el ${new Date().toLocaleDateString('es-HN')}.\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type:'text/markdown;charset=utf-8' }));
+  a.download = `Paquete_DP_despues_de_${ant.k}.md`;
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 // ════════════════════════════════════════════════════════════
