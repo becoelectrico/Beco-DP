@@ -153,6 +153,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .acciones-list li{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
 .acciones-list li:last-child{border-bottom:none}
 .acc-num{font-weight:700;color:var(--navy);min-width:16px}
+.cmp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem}
+.cmp-sum{font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6}
+.cmp-sum b{color:var(--navy)}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.cmp-table th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:5px 8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.cmp-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.cmp-table tr:last-child td{border-bottom:none}
+.dl{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:4px}
+.dl-n{background:var(--surface2);color:var(--text3)}
+.dl-ok{background:var(--ok-bg);color:var(--ok-text)}
+.dl-w{background:var(--warn-bg);color:var(--warn-text)}
+.dl-d{background:var(--danger-bg);color:var(--danger-text)}
+.cmp-note{font-size:11px;color:var(--text3);margin-top:.625rem}
+.iris-list{display:flex;flex-direction:column;gap:6px}
+.iris-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px}
+.iris-row.actual{border-color:var(--navy2);background:var(--accent-bg)}
+.iris-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--navy2);background:#fff;color:var(--navy);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.iris-btn:hover{background:var(--navy);color:#fff}
+.iris-miss{font-size:11px;color:var(--text3);font-style:italic;white-space:nowrap}
 
 @media(max-width:700px){
   .corp-header-inner,.nav-bar-inner,.content{padding-left:1rem;padding-right:1rem}
@@ -447,7 +466,10 @@ function dC(id){ if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 // NAVEGACIÓN
 // ════════════════════════════════════════════════════════════
 let currentScreen = 'home';
-const genState = {1:{tipo:'Qm',fase:'A'},2:{tipo:'Qm',fase:'A'},3:{tipo:'Qm',fase:'A'}};
+const genState = {1:{tipo:'Qm',fase:'A',periodo:'todo'},2:{tipo:'Qm',fase:'A',periodo:'todo'},3:{tipo:'Qm',fase:'A',periodo:'todo'}};
+const BASE_K = '2025-09';                 // campaña base del seguimiento actual
+const UMBRAL_NORMAL = 10, UMBRAL_ALTO = 25, UMBRAL_TEMP = 3;
+const MESES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 function mostrarPantalla(id){
   ['loading','home','g1','g2','g3'].forEach(s =>
@@ -575,9 +597,17 @@ function serieGen(g){
   return CAMPANAS.filter(c => c.k <= SEL && lecGen(c, g)).map(c => ({ c, L: lecGen(c, g) }));
 }
 
+// Fecha de la campaña como número continuo (año + fracción del mes) para el eje de tiempo real
+function tNum(c){ const [y,m] = c.k.split('-').map(Number); return y + (m-1)/12; }
+function tLabel(x, corto){
+  const y = Math.floor(x + 1e-6), m = Math.round((x - y) * 12);
+  return corto ? `${MESES_ABR[m]} ${String(y).slice(2)}` : String(y);
+}
+
 function buildGenChart(g){
   const gk = 'G'+g, st = genState[g], isNQN = st.tipo === 'NQN';
   let pts = serieGen(gk);
+  if (st.periodo === 'base') pts = pts.filter(p => p.c.k >= BASE_K);
   if (isNQN) pts = pts.filter(p => FASES.some(f => p.L.maquina[f].nqn_pos != null));
   const fases = st.fase === 'Todas' ? FASES : [st.fase];
   const kp = isNQN ? 'nqn_pos' : 'qm_pos', kn = isNQN ? 'nqn_neg' : 'qm_neg';
@@ -587,21 +617,141 @@ function buildGenChart(g){
   fases.forEach(f => {
     const one = fases.length === 1, lbl = one ? '' : `F${f} `;
     const cp = one ? COL_POS : cPos[f], cn = one ? COL_NEG : cNeg[f];
-    ds.push({label:lbl+st.tipo+'+', data:pts.map(p=>p.L.maquina[f][kp]??null), borderColor:cp, backgroundColor:cp+'15', borderWidth:2.5, tension:.3, spanGaps:true, pointRadius:5, pointBackgroundColor:cp, pointBorderColor:'#fff', pointBorderWidth:2});
-    ds.push({label:lbl+st.tipo+'−', data:pts.map(p=>p.L.maquina[f][kn]??null), borderColor:cn, backgroundColor:cn+'15', borderWidth:2, tension:.3, spanGaps:true, pointRadius:4, pointBackgroundColor:cn, pointBorderColor:'#fff', pointBorderWidth:2});
+    const mk = k => pts.map(p => ({ x: tNum(p.c), y: p.L.maquina[f][k] ?? null, c: p.c, L: p.L }));
+    ds.push({label:lbl+st.tipo+'+', data:mk(kp), borderColor:cp, backgroundColor:cp+'15', borderWidth:2.5, cubicInterpolationMode:'monotone', spanGaps:true, segment:{borderDash:ctx => (ctx.p1.parsed.x - ctx.p0.parsed.x) > 1 ? [5,4] : undefined}, pointRadius:5, pointBackgroundColor:cp, pointBorderColor:'#fff', pointBorderWidth:2});
+    ds.push({label:lbl+st.tipo+'−', data:mk(kn), borderColor:cn, backgroundColor:cn+'15', borderWidth:2, cubicInterpolationMode:'monotone', spanGaps:true, segment:{borderDash:ctx => (ctx.p1.parsed.x - ctx.p0.parsed.x) > 1 ? [5,4] : undefined}, pointRadius:4, pointBackgroundColor:cn, pointBorderColor:'#fff', pointBorderWidth:2});
   });
+
+  const xs = pts.map(p => tNum(p.c));
+  const min = Math.min(...xs), max = Math.max(...xs), span = max - min;
+  const corto = span <= 3;                       // rango corto → etiquetas por mes
+  const step = corto ? (span <= 1.5 ? 1/12 : 2/12) : 1;
+  const pad = corto ? 1/12 : 0.25;
+
   const id = 'chartG'+g; dC(id);
   charts[id] = new Chart(document.getElementById(id), {
-    type:'line', data:{ labels: pts.map(p => etiqueta(p.c)), datasets: ds },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false,
+    type:'line', data:{ datasets: ds },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, parsing:{xAxisKey:'x',yAxisKey:'y'},
+      interaction:{mode:'nearest',axis:'x',intersect:false},
       plugins:{ legend:{display:fases.length>1,position:'top',align:'end',labels:{font:{size:11},boxWidth:16,boxHeight:2}},
-        tooltip:{mode:'index',intersect:false,callbacks:{
-          label:x=>` ${x.dataset.label}: ${x.parsed.y ?? '—'}${unit}`,
-          afterBody:it=>{ const p=pts[it[0].dataIndex]; return p ? `Temp. estátor: ${v(p.L.temp_estator)}°C` : ''; } }} },
-      scales:{ x:{grid:{color:GRID},ticks:{color:TMUTED,font:{size:10},maxRotation:38,autoSkip:false}},
-               y:{grid:{color:GRID},ticks:{color:TMUTED,font:{size:10},callback:x=>x+unit},
-                  title:{display:true,text:isNQN?'Cantidad normalizada (NQN)':'Magnitud pico (mV)',color:TSEC,font:{size:10}}} } }
+        tooltip:{mode:'x',intersect:false,callbacks:{
+          title:it => it.length ? etiqueta(it[0].raw.c) : '',
+          label:x => ` ${x.dataset.label}: ${x.parsed.y ?? '—'}${unit}`,
+          afterBody:it => it.length ? `Temp. estátor: ${v(it[0].raw.L.temp_estator)}°C` : '' }} },
+      scales:{
+        x:{ type:'linear', min: pts.length ? min - pad : undefined, max: pts.length ? max + pad : undefined,
+            afterBuildTicks: ax => {               // marcas exactas por mes o por año (evita errores de redondeo)
+              const t = [], m0 = Math.ceil((ax.min) * 12 - 1e-6), m1 = Math.floor((ax.max) * 12 + 1e-6), st = Math.round(step * 12);
+              for (let m = m0; m <= m1; m++) if (corto ? m % st === 0 : m % 12 === 0) t.push({ value: m / 12 });
+              ax.ticks = t; },
+            grid:{color:GRID}, ticks:{ color:TMUTED, font:{size:10}, stepSize:step,
+              callback: x => corto ? tLabel(x, true) : String(Math.round(x)) } },
+        y:{ grid:{color:GRID}, ticks:{color:TMUTED,font:{size:10},callback:x=>x+unit},
+            title:{display:true,text:isNQN?'Cantidad normalizada (NQN)':'Magnitud pico (mV)',color:TSEC,font:{size:10}} } } }
   });
+}
+
+// ════════════════════════════════════════════════════════════
+// COMPARATIVA AUTOMÁTICA
+// ════════════════════════════════════════════════════════════
+function pct(a, b){ return (a == null || b == null || b === 0) ? null : (a - b) / b * 100; }
+function mesesEntre(a, b){ const [y1,m1]=a.k.split('-').map(Number), [y2,m2]=b.k.split('-').map(Number); return (y2-y1)*12 + (m2-m1); }
+
+// Clasifica un cambio: los aumentos preocupan; las bajas grandes se marcan en verde
+function delta(actual, ref){
+  const p = pct(actual, ref);
+  if (p == null) return { p:null, cls:'dl-n', html:'<span class="dl dl-n">—</span>' };
+  const cls = p > UMBRAL_ALTO ? 'dl-d' : p >= UMBRAL_NORMAL ? 'dl-w' : p <= -UMBRAL_NORMAL ? 'dl-ok' : 'dl-n';
+  const fl = p >= 0.5 ? '▲' : p <= -0.5 ? '▼' : '=';
+  return { p, cls, html:`<span class="dl ${cls}">${fl} ${p>0?'+':''}${p.toFixed(1)} %</span>` };
+}
+
+function renderComparativa(gk, cg){
+  const serie = CAMPANAS.filter(c => lecGen(c, gk));
+  const idx = serie.findIndex(c => c.k === cg.k);
+  const prev = idx > 0 ? serie[idx-1] : null;
+  const base = cg.k > BASE_K ? camp(BASE_K) : null;
+  const L = lecGen(cg, gk), P = lecGen(prev, gk), B = lecGen(base, gk);
+  const hist = serie.slice(0, idx);       // lecturas anteriores (para máximo histórico)
+
+  if (!P) return `<div class="cmp-card"><div class="sec-title"><span>Comparativa automática</span></div>
+    <div class="a-empty">Es la primera lectura registrada de este generador; no hay contra qué comparar.</div></div>`;
+
+  const dT = (L.temp_estator != null && P.temp_estator != null) ? L.temp_estator - P.temp_estator : null;
+  let altos = 0;
+  const filas = FASES.map(f => {
+    const m = L.maquina[f], mp = P.maquina[f], mb = B?.maquina[f];
+    const dPrev = delta(m.qm_pos, mp.qm_pos), dBase = delta(m.qm_pos, mb?.qm_pos);
+    const dNeg  = delta(m.qm_neg, mp.qm_neg), dNqn = delta(m.nqn_pos, mp.nqn_pos);
+    if (dPrev.cls === 'dl-d' || dBase.cls === 'dl-d') altos++;
+    const maxH = Math.max(...hist.map(c => lecGen(c, gk).maquina[f].qm_pos ?? -Infinity));
+    const nuevoMax = m.qm_pos != null && hist.length && m.qm_pos > maxH;
+    const r = ratio(m.qm_pos, m.qm_neg);
+    return `<tr>
+      <td style="font-weight:600;color:var(--navy)">Fase ${f}</td>
+      <td><b>${v(m.qm_pos)}</b> mV ${nuevoMax ? '<span class="badge badge-danger" style="font-size:10px">Nuevo máximo</span>' : ''}</td>
+      <td>${v(mp.qm_pos)} → ${v(m.qm_pos)} ${dPrev.html}</td>
+      <td>${B ? `${v(mb.qm_pos)} → ${v(m.qm_pos)} ${dBase.html}` : '<span class="dl dl-n">—</span>'}</td>
+      <td>${v(m.qm_neg)} mV ${dNeg.html}</td>
+      <td>${m.nqn_pos == null ? '—' : m.nqn_pos.toLocaleString('es-HN')} ${m.nqn_pos != null && mp.nqn_pos != null ? dNqn.html : ''}</td>
+      <td>${r == null ? '—' : `<span class="ratio-pill ${ratioPill(r)}">${r.toFixed(2)}</span>`}</td>
+    </tr>`;
+  }).join('');
+
+  const nMes = mesesEntre(prev, cg);
+  const tempTxt = dT == null ? 'Temperatura sin dato' :
+    `Temperatura ${v(P.temp_estator)} → ${v(L.temp_estator)} °C (${dT>0?'+':''}${dT} °C)`;
+  const tempAviso = dT != null && Math.abs(dT) > UMBRAL_TEMP
+    ? `<div class="notice" style="margin:.5rem 0 .75rem">⚠ La temperatura cambió ${Math.abs(dT)} °C respecto a ${esc(etiqueta(prev))}. La comparación no es directa: el stress grading sube con la temperatura y los vacíos internos bajan.</div>` : '';
+
+  return `<div class="cmp-card">
+    <div class="sec-title"><span>Comparativa automática</span> — calculada de las lecturas</div>
+    <div class="cmp-sum">Comparado contra <b>${esc(etiqueta(prev))}</b> (${nMes} ${nMes===1?'mes':'meses'} antes)${B ? ` y contra la base <b>${esc(etiqueta(base))}</b>` : ''}
+      · ${tempTxt} · ${altos ? `<b style="color:var(--danger-text)">${altos} fase${altos>1?'s':''} con aumento &gt; ${UMBRAL_ALTO} %</b>` : `Ninguna fase supera +${UMBRAL_ALTO} %`}</div>
+    ${tempAviso}
+    <div style="overflow-x:auto"><table class="cmp-table">
+      <thead><tr><th>Fase</th><th>Qm+ actual</th><th>vs anterior</th><th>vs base</th><th>Qm− (vs ant.)</th><th>NQN+ (vs ant.)</th><th>Ratio</th></tr></thead>
+      <tbody>${filas}</tbody></table></div>
+    <div class="cmp-note">Gris: cambio &lt; ${UMBRAL_NORMAL} % (variación normal) · Ámbar: aumento ${UMBRAL_NORMAL}–${UMBRAL_ALTO} % · Rojo: aumento &gt; ${UMBRAL_ALTO} % · Verde: baja ≥ ${UMBRAL_NORMAL} %</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTES IRIS ORIGINALES
+// ════════════════════════════════════════════════════════════
+function nombreIris(c, gk){ return lecGen(c, gk)?.reporte_iris || `IRIS_${gk}_${c.k}.pdf`; }
+
+function renderIris(gk, cg){
+  const serie = CAMPANAS.filter(c => lecGen(c, gk)).reverse();
+  const conPdf = serie.filter(c => c.archivos[nombreIris(c, gk)]).length;
+  return `<div class="analysis-card" style="margin-bottom:1.25rem">
+    <div class="analysis-card-header">Reportes IRIS originales <span style="font-size:10px;opacity:.8">${conPdf} de ${serie.length} cargados</span></div>
+    <div class="analysis-card-body"><div class="iris-list">
+      ${serie.map(c => {
+        const n = nombreIris(c, gk), ok = !!c.archivos[n];
+        return `<div class="iris-row ${c.k === cg.k ? 'actual' : ''}">
+          <span><b>${esc(etiqueta(c))}</b>${c.k === cg.k ? ' · lectura mostrada' : ''}<br><span style="font-size:11px;color:var(--text3)">${esc(n)}</span></span>
+          ${ok ? `<button class="iris-btn" onclick="verIris('${c.k}','${esc(n)}')">Ver PDF</button>` : '<span class="iris-miss">No cargado aún</span>'}
+        </div>`; }).join('')}
+    </div></div></div>`;
+}
+
+async function verIris(k, nombre){
+  // Se abre la pestaña de inmediato (si no, el navegador la bloquea) y luego se carga el enlace fresco
+  const w = window.open('', '_blank');
+  if (w) w.document.write('<p style="font-family:sans-serif;padding:2rem;color:#555">Abriendo reporte IRIS…</p>');
+  try {
+    const meta = await graphGet(itemUrl(`campanas/${k}/${nombre}`));
+    if (!meta) throw new Error('El archivo ya no está en OneDrive.');
+    const url = meta['@microsoft.graph.downloadUrl'];
+    // Se descarga y se muestra como PDF en el visor del navegador
+    const blob = await (await fetch(url)).blob();
+    const obj = URL.createObjectURL(new Blob([blob], { type:'application/pdf' }));
+    if (w) w.location.href = obj; else window.open(obj, '_blank');
+  } catch(e) {
+    if (w) w.close();
+    alert('No se pudo abrir el reporte: ' + e.message);
+  }
 }
 
 function renderGen(g){
@@ -618,6 +768,7 @@ function renderGen(g){
 
   const fBtn  = (t,l) => `<button class="f-btn ${st.tipo===t?'active':''}" onclick="setTipo(${g},'${t}')">${l}</button>`;
   const phBtn = f => `<button class="f-btn ${st.fase===f?'active':''}" onclick="setFase(${g},'${f}')">${f==='Todas'?'Todas':'Fase '+f}</button>`;
+  const perBtn = (p,l) => `<button class="f-btn ${st.periodo===p?'active':''}" onclick="setPeriodo(${g},'${p}')">${l}</button>`;
 
   // Polaridad: valores calculados de lectura.json + texto de analisis.json
   const polRows = FASES.map(f => {
@@ -652,12 +803,16 @@ function renderGen(g){
       <div class="gen-kpi"><div class="gen-kpi-label">Nivel de atención</div><div style="margin-top:6px"><span class="badge ${nivBadge(A?.nivel_preocupacion)}">${esc(A?.nivel_preocupacion || 'Sin análisis')}</span></div><div class="gen-kpi-sub" style="margin-top:4px">${esc(A?.proxima_prueba || '')}</div></div>
     </div>
 
+    ${renderComparativa(gk, cg)}
+
     <div class="chart-card">
       <div class="sec-title"><span>Tendencia histórica</span> — hasta ${esc(etiqueta(cg))}</div>
       <div class="filter-row">
         <span class="filter-label">Parámetro:</span>${fBtn('Qm','Qm — Severidad')}${fBtn('NQN','NQN — Extensión')}
         <div class="f-sep"></div>
         <span class="filter-label">Fase:</span>${phBtn('A')}${phBtn('B')}${phBtn('C')}${phBtn('Todas')}
+        <div class="f-sep"></div>
+        <span class="filter-label">Periodo:</span>${perBtn('todo','Todo el historial')}${perBtn('base','Desde la base')}
       </div>
       <div class="chart-wrap" style="height:270px"><canvas id="chartG${g}"></canvas></div>
     </div>
@@ -701,13 +856,15 @@ function renderGen(g){
           </div>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${renderIris(gk, cg)}`;
 
   buildGenChart(g);
 }
 
 function setTipo(g,t){ genState[g].tipo = t; renderGen(g); }
 function setFase(g,f){ genState[g].fase = f; renderGen(g); }
+function setPeriodo(g,p){ genState[g].periodo = p; renderGen(g); }
 
 // ════════════════════════════════════════════════════════════
 // INICIO
