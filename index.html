@@ -597,12 +597,26 @@ function serieGen(g){
   return CAMPANAS.filter(c => c.k <= SEL && lecGen(c, g)).map(c => ({ c, L: lecGen(c, g) }));
 }
 
-// Fecha de la campaña como número continuo (año + fracción del mes) para el eje de tiempo real
-function tNum(c){ const [y,m] = c.k.split('-').map(Number); return y + (m-1)/12; }
-function tLabel(x, corto){
-  const y = Math.floor(x + 1e-6), m = Math.round((x - y) * 12);
-  return corto ? `${MESES_ABR[m]} ${String(y).slice(2)}` : String(y);
-}
+// Plugin: escribe el valor encima de cada punto (solo cuando hay pocas líneas, para que se lea)
+const valueLabels = {
+  id:'valueLabels',
+  afterDatasetsDraw(chart, _a, opt){
+    if (!opt?.enabled) return;
+    const ctx = chart.ctx; ctx.save();
+    ctx.font = '600 10px -apple-system,Segoe UI,Arial,sans-serif'; ctx.textAlign = 'center';
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i); if (meta.hidden) return;
+      const arriba = i % 2 === 0;                 // positivo arriba del punto, negativo abajo
+      meta.data.forEach((pt, j) => {
+        const val = ds.data[j]; if (val == null) return;
+        ctx.fillStyle = ds.borderColor;
+        ctx.textBaseline = arriba ? 'bottom' : 'top';
+        ctx.fillText(Number(val).toLocaleString('es-HN'), pt.x, pt.y + (arriba ? -8 : 8));
+      });
+    });
+    ctx.restore();
+  }
+};
 
 function buildGenChart(g){
   const gk = 'G'+g, st = genState[g], isNQN = st.tipo === 'NQN';
@@ -617,37 +631,23 @@ function buildGenChart(g){
   fases.forEach(f => {
     const one = fases.length === 1, lbl = one ? '' : `F${f} `;
     const cp = one ? COL_POS : cPos[f], cn = one ? COL_NEG : cNeg[f];
-    const mk = k => pts.map(p => ({ x: tNum(p.c), y: p.L.maquina[f][k] ?? null, c: p.c, L: p.L }));
-    ds.push({label:lbl+st.tipo+'+', data:mk(kp), borderColor:cp, backgroundColor:cp+'15', borderWidth:2.5, cubicInterpolationMode:'monotone', spanGaps:true, segment:{borderDash:ctx => (ctx.p1.parsed.x - ctx.p0.parsed.x) > 1 ? [5,4] : undefined}, pointRadius:5, pointBackgroundColor:cp, pointBorderColor:'#fff', pointBorderWidth:2});
-    ds.push({label:lbl+st.tipo+'−', data:mk(kn), borderColor:cn, backgroundColor:cn+'15', borderWidth:2, cubicInterpolationMode:'monotone', spanGaps:true, segment:{borderDash:ctx => (ctx.p1.parsed.x - ctx.p0.parsed.x) > 1 ? [5,4] : undefined}, pointRadius:4, pointBackgroundColor:cn, pointBorderColor:'#fff', pointBorderWidth:2});
+    ds.push({label:lbl+st.tipo+'+', data:pts.map(p=>p.L.maquina[f][kp]??null), borderColor:cp, backgroundColor:cp+'15', borderWidth:2.5, cubicInterpolationMode:'monotone', spanGaps:true, pointRadius:5, pointBackgroundColor:cp, pointBorderColor:'#fff', pointBorderWidth:2});
+    ds.push({label:lbl+st.tipo+'−', data:pts.map(p=>p.L.maquina[f][kn]??null), borderColor:cn, backgroundColor:cn+'15', borderWidth:2, cubicInterpolationMode:'monotone', spanGaps:true, pointRadius:4, pointBackgroundColor:cn, pointBorderColor:'#fff', pointBorderWidth:2});
   });
-
-  const xs = pts.map(p => tNum(p.c));
-  const min = Math.min(...xs), max = Math.max(...xs), span = max - min;
-  const corto = span <= 3;                       // rango corto → etiquetas por mes
-  const step = corto ? (span <= 1.5 ? 1/12 : 2/12) : 1;
-  const pad = corto ? 1/12 : 0.25;
-
   const id = 'chartG'+g; dC(id);
   charts[id] = new Chart(document.getElementById(id), {
-    type:'line', data:{ datasets: ds },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, parsing:{xAxisKey:'x',yAxisKey:'y'},
-      interaction:{mode:'nearest',axis:'x',intersect:false},
-      plugins:{ legend:{display:fases.length>1,position:'top',align:'end',labels:{font:{size:11},boxWidth:16,boxHeight:2}},
-        tooltip:{mode:'x',intersect:false,callbacks:{
-          title:it => it.length ? etiqueta(it[0].raw.c) : '',
-          label:x => ` ${x.dataset.label}: ${x.parsed.y ?? '—'}${unit}`,
-          afterBody:it => it.length ? `Temp. estátor: ${v(it[0].raw.L.temp_estator)}°C` : '' }} },
-      scales:{
-        x:{ type:'linear', min: pts.length ? min - pad : undefined, max: pts.length ? max + pad : undefined,
-            afterBuildTicks: ax => {               // marcas exactas por mes o por año (evita errores de redondeo)
-              const t = [], m0 = Math.ceil((ax.min) * 12 - 1e-6), m1 = Math.floor((ax.max) * 12 + 1e-6), st = Math.round(step * 12);
-              for (let m = m0; m <= m1; m++) if (corto ? m % st === 0 : m % 12 === 0) t.push({ value: m / 12 });
-              ax.ticks = t; },
-            grid:{color:GRID}, ticks:{ color:TMUTED, font:{size:10}, stepSize:step,
-              callback: x => corto ? tLabel(x, true) : String(Math.round(x)) } },
-        y:{ grid:{color:GRID}, ticks:{color:TMUTED,font:{size:10},callback:x=>x+unit},
-            title:{display:true,text:isNQN?'Cantidad normalizada (NQN)':'Magnitud pico (mV)',color:TSEC,font:{size:10}} } } }
+    type:'line', data:{ labels: pts.map(p => etiqueta(p.c)), datasets: ds },
+    plugins:[valueLabels],
+    options:{ responsive:true, maintainAspectRatio:false, animation:false,
+      layout:{ padding:{ top:16, left:8, right:8 } },
+      plugins:{ valueLabels:{ enabled: fases.length === 1 },
+        legend:{display:fases.length>1,position:'top',align:'end',labels:{font:{size:11},boxWidth:16,boxHeight:2}},
+        tooltip:{mode:'index',intersect:false,callbacks:{
+          label:x=>` ${x.dataset.label}: ${x.parsed.y ?? '—'}${unit}`,
+          afterBody:it=>{ const p=pts[it[0].dataIndex]; return p ? `Temp. estátor: ${v(p.L.temp_estator)}°C` : ''; } }} },
+      scales:{ x:{grid:{color:GRID},offset:true,ticks:{color:TSEC,font:{size:11,weight:'600'},maxRotation:0,autoSkip:false}},
+               y:{grid:{color:GRID},grace:'8%',ticks:{color:TMUTED,font:{size:10},callback:x=>x+unit},
+                  title:{display:true,text:isNQN?'Cantidad normalizada (NQN)':'Magnitud pico (mV)',color:TSEC,font:{size:10}}} } }
   });
 }
 
@@ -812,7 +812,7 @@ function renderGen(g){
         <div class="f-sep"></div>
         <span class="filter-label">Fase:</span>${phBtn('A')}${phBtn('B')}${phBtn('C')}${phBtn('Todas')}
         <div class="f-sep"></div>
-        <span class="filter-label">Periodo:</span>${perBtn('todo','Todo el historial')}${perBtn('base','Desde la base')}
+        <span class="filter-label">Mostrar:</span>${perBtn('todo','Todas las lecturas')}${perBtn('base','Desde la base (Sep 2025)')}
       </div>
       <div class="chart-wrap" style="height:270px"><canvas id="chartG${g}"></canvas></div>
     </div>
