@@ -1,7 +1,7 @@
 // Service Worker — BECO Descargas Parciales
 // Solo guarda la "cáscara" de la app (HTML, íconos, librerías).
 // NUNCA guarda datos de OneDrive ni respuestas de login: esos siempre van a la red.
-const VERSION = 'dp-v1';
+const VERSION = 'dp-v2';
 const SHELL = ['./', './index.html', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 const LIBS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com'];

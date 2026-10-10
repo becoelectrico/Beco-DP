@@ -12,6 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="BECO DP">
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -172,6 +174,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .iris-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--navy2);background:#fff;color:var(--navy);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .iris-btn:hover{background:var(--navy);color:#fff}
 .iris-miss{font-size:11px;color:var(--text3);font-style:italic;white-space:nowrap}
+.page-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
+.btn-inf{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-inf:hover{background:var(--navy2)}
+.btn-sec{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:#fff;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-sec:hover{border-color:var(--navy2);color:var(--navy)}
+.btn-ok{background:#1a7a4a}.btn-ok:hover{background:#15633c}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:1rem;line-height:1.5}
+.m-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:.875rem 0 .375rem}
+.m-select{width:100%;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:13px;color:var(--navy);font-weight:600}
+.op-grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px 10px;align-items:center;font-size:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px}
+.op-grid .h{font-size:10px;color:var(--text3);font-weight:700;text-align:center}
+.op-grid label{display:flex;justify-content:center}
+.op-grid .rl{font-weight:600;color:var(--navy)}
+.op-list{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px}
+.op-list label{display:flex;align-items:center;gap:6px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--navy);width:15px;height:15px;cursor:pointer}
+.m-links{font-size:11px;margin-top:.375rem}
+.m-links button{background:none;border:none;color:var(--navy2);cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline;padding:0 6px 0 0}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+.modal-msg{font-size:12px;margin-top:.75rem;min-height:16px;color:var(--text2)}
+.modal-msg.err{color:var(--danger-text)}.modal-msg.ok{color:var(--ok-text)}
+.dest-box{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.dest-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer}
+.dest-row:last-child{border-bottom:none}
+.dest-n{font-size:13px;font-weight:600}.dest-c{font-size:11px;color:var(--text3)}
+.dest-add{display:flex;gap:6px}
+.dest-add input{flex:1;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:13px}
+.dest-tag{display:inline-flex;align-items:center;gap:4px;background:var(--navy-light);color:var(--navy);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;margin:6px 6px 0 0}
+.dest-tag button{background:none;border:none;cursor:pointer;color:var(--navy);font-size:13px}
+.file-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px dashed var(--border2);border-radius:var(--radius);margin-bottom:6px;font-size:12px}
+.file-row b{color:var(--navy)}
+.file-row input{display:none}
+.file-btn{padding:4px 10px;border-radius:20px;border:1px solid var(--navy2);background:#fff;color:var(--navy);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.file-lbl{font-size:11px;color:var(--text3);flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-lbl.ok{color:var(--ok-text)}.file-lbl.err{color:var(--danger-text)}
+.sub-k{font-size:13px;color:var(--text2);margin-top:.75rem}
+.sub-err{font-size:12px;color:var(--danger-text);margin-top:4px}
+.sub-av{font-size:12px;color:var(--warn-text);margin-top:4px}
 
 @media(max-width:700px){
   .corp-header-inner,.nav-bar-inner,.content{padding-left:1rem;padding-right:1rem}
@@ -225,6 +269,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
           <div class="corp-meta-label">Lectura mostrada</div>
           <div class="corp-meta-value" id="hdr-fecha">—</div>
         </div>
+        <button class="hdr-btn" onclick="abrirSubir()" title="Subir una lectura nueva o PDF de IRIS">⬆ Subir lectura</button>
         <button class="hdr-btn" onclick="recargar()" title="Volver a leer OneDrive">⟳ Recargar</button>
         <button class="hdr-btn" onclick="logout()">Salir</button>
       </div>
@@ -252,6 +297,90 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
     <div id="screen-g2" class="hidden"></div>
     <div id="screen-g3" class="hidden"></div>
   </main>
+</div>
+
+<!-- ══ MODAL INFORME ══ -->
+<div class="modal-overlay" id="modal-informe">
+  <div class="modal">
+    <div class="modal-title" id="inf-titulo">Informe</div>
+    <div id="inf-paso1">
+      <div class="modal-sub">El informe usa la lectura seleccionada en la barra superior.</div>
+      <div id="inf-opciones">
+        <div class="m-lbl">Gráficas (una por fase, con sus valores)</div>
+        <div class="op-grid">
+          <span></span><span class="h">Fase A</span><span class="h">Fase B</span><span class="h">Fase C</span><span class="h">Todas</span>
+          <span class="rl">Qm — Severidad</span>
+          <label><input type="checkbox" id="op-Qm-A" onchange="syncTodas()"></label><label><input type="checkbox" id="op-Qm-B" onchange="syncTodas()"></label><label><input type="checkbox" id="op-Qm-C" onchange="syncTodas()"></label><label><input type="checkbox" id="op-Qm-T" onchange="toggleTodas('Qm')"></label>
+          <span class="rl">NQN — Extensión</span>
+          <label><input type="checkbox" id="op-NQN-A" onchange="syncTodas()"></label><label><input type="checkbox" id="op-NQN-B" onchange="syncTodas()"></label><label><input type="checkbox" id="op-NQN-C" onchange="syncTodas()"></label><label><input type="checkbox" id="op-NQN-T" onchange="toggleTodas('NQN')"></label>
+        </div>
+        <div class="m-lbl">Lecturas en las gráficas</div>
+        <select class="m-select" id="op-periodo"><option value="todo">Todas las lecturas</option><option value="base">Desde la base (Sep 2025)</option></select>
+        <div class="m-lbl">Secciones</div>
+        <div class="op-list">
+          <label><input type="checkbox" class="op-sec" id="op-comparativa"> Comparativa automática</label>
+          <label><input type="checkbox" class="op-sec" id="op-tendencia"> Análisis de la tendencia</label>
+          <label><input type="checkbox" class="op-sec" id="op-polaridad"> Polaridad y predominancia</label>
+          <label><input type="checkbox" class="op-sec" id="op-prpd"> Patrón PRPD</label>
+          <label><input type="checkbox" class="op-sec" id="op-sistema"> Total System</label>
+          <label><input type="checkbox" class="op-sec" id="op-acciones"> Acciones recomendadas</label>
+        </div>
+        <div class="m-links"><button onclick="marcarTodo(true)">Seleccionar todo</button><button onclick="marcarTodo(false)">Quitar todo</button></div>
+      </div>
+      <div class="m-lbl">Supervisor que firma</div>
+      <select class="m-select" id="inf-sup"></select>
+      <div class="modal-btns">
+        <button class="btn-sec" onclick="cerrarModal('modal-informe')">Cerrar</button>
+        <button class="btn-sec" onclick="vistaPrevia()">👁 Vista previa PDF</button>
+        <button class="btn-inf btn-ok" onclick="pasoCorreo()">📧 Enviar por correo</button>
+      </div>
+    </div>
+    <div id="inf-paso2" class="hidden">
+      <div class="modal-sub">Elige a quién se envía. El correo sale desde tu cuenta con el PDF adjunto.</div>
+      <div class="m-lbl">Destinatarios fijos</div>
+      <div class="dest-box" id="dest-fijos"></div>
+      <div class="m-lbl">Agregar otro correo</div>
+      <div class="dest-add"><input type="email" id="dest-extra" placeholder="correo@ejemplo.com" onkeydown="if(event.key==='Enter')agregarExtra()">
+        <button class="btn-sec" onclick="agregarExtra()">+ Agregar</button></div>
+      <div id="dest-extra-lista"></div>
+      <div class="modal-btns">
+        <button class="btn-sec" onclick="volverPaso1()">← Atrás</button>
+        <button class="btn-inf btn-ok" id="btn-enviar" onclick="enviarInforme()">📧 Enviar ahora</button>
+      </div>
+    </div>
+    <div class="modal-msg" id="inf-msg"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL SUBIR LECTURA ══ -->
+<div class="modal-overlay" id="modal-subir">
+  <div class="modal">
+    <div class="modal-title">Subir lectura</div>
+    <div class="modal-sub">Lectura nueva: carga <b>lectura.json</b>, <b>analisis.json</b> y los PDF de IRIS.<br>Solo PDF para una lectura anterior: carga los PDF y elige la campaña.</div>
+    <div class="file-row"><b>lectura.json</b><span class="file-lbl" id="lbl-sub-lectura">Sin archivo</span>
+      <button class="file-btn" onclick="document.getElementById('sub-lectura').click()">Elegir</button>
+      <input type="file" id="sub-lectura" accept=".json,application/json" onchange="selArchivo('lectura',this)"></div>
+    <div class="file-row"><b>analisis.json</b><span class="file-lbl" id="lbl-sub-analisis">Sin archivo</span>
+      <button class="file-btn" onclick="document.getElementById('sub-analisis').click()">Elegir</button>
+      <input type="file" id="sub-analisis" accept=".json,application/json" onchange="selArchivo('analisis',this)"></div>
+    <div class="file-row"><b>PDF IRIS — G1</b><span class="file-lbl" id="lbl-sub-G1">Sin archivo</span>
+      <button class="file-btn" onclick="document.getElementById('sub-G1').click()">Elegir</button>
+      <input type="file" id="sub-G1" accept=".pdf,application/pdf" onchange="selArchivo('G1',this)"></div>
+    <div class="file-row"><b>PDF IRIS — G2</b><span class="file-lbl" id="lbl-sub-G2">Sin archivo</span>
+      <button class="file-btn" onclick="document.getElementById('sub-G2').click()">Elegir</button>
+      <input type="file" id="sub-G2" accept=".pdf,application/pdf" onchange="selArchivo('G2',this)"></div>
+    <div class="file-row"><b>PDF IRIS — G3</b><span class="file-lbl" id="lbl-sub-G3">Sin archivo</span>
+      <button class="file-btn" onclick="document.getElementById('sub-G3').click()">Elegir</button>
+      <input type="file" id="sub-G3" accept=".pdf,application/pdf" onchange="selArchivo('G3',this)"></div>
+    <div id="sub-camp-wrap"><div class="m-lbl">Campaña (solo si subes PDF sin lectura.json)</div>
+      <select class="m-select" id="sub-camp" onchange="validarSubida()"></select></div>
+    <div id="sub-resumen"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="cerrarModal('modal-subir')">Cancelar</button>
+      <button class="btn-inf btn-ok" id="btn-subir" onclick="confirmarSubida()" disabled>Confirmar y subir</button>
+    </div>
+    <div class="modal-msg" id="sub-msg"></div>
+  </div>
 </div>
 
 <script>
@@ -504,6 +633,7 @@ async function recargar(){
   mostrarPantalla('loading');
   document.getElementById('screen-loading').innerHTML = '<div class="spinner"></div>Leyendo campañas desde OneDrive…';
   try {
+    if (!CONFIG) CONFIG = await leerJSON('config/acceso.json');
     await cargarCampanas();
     // Por defecto: la campaña más reciente con análisis completo (o la última si ninguna lo tiene)
     if (!SEL || !camp(SEL)) {
@@ -564,6 +694,7 @@ function renderHome(){
     </table></div>` : '';
 
   el.innerHTML = `
+    <div class="page-actions"><span></span><button class="btn-inf" onclick="abrirInforme('general')">📄 Informe general</button></div>
     ${avisos.map(a => `<div class="notice">⚠ ${esc(a)}</div>`).join('')}
     <div class="intro-box">La interpretación se fundamenta en la metodología IRIS Power e IEEE 1434, incorporando análisis de polaridad, patrones PRPD y extensión del deterioro mediante NQN.</div>
     <div class="sec-title"><span>Estado de los generadores</span> — ${esc(fechaLarga(c))}</div>
@@ -603,15 +734,16 @@ const valueLabels = {
   afterDatasetsDraw(chart, _a, opt){
     if (!opt?.enabled) return;
     const ctx = chart.ctx; ctx.save();
-    ctx.font = '600 10px -apple-system,Segoe UI,Arial,sans-serif'; ctx.textAlign = 'center';
+    ctx.font = `600 ${opt.size || 10}px -apple-system,Segoe UI,Arial,sans-serif`; ctx.textAlign = 'center';
     chart.data.datasets.forEach((ds, i) => {
       const meta = chart.getDatasetMeta(i); if (meta.hidden) return;
-      const arriba = i % 2 === 0;                 // positivo arriba del punto, negativo abajo
+      const arriba = opt.allAbove || i % 2 === 0;   // positivo arriba del punto, negativo abajo
       meta.data.forEach((pt, j) => {
         const val = ds.data[j]; if (val == null) return;
         ctx.fillStyle = ds.borderColor;
         ctx.textBaseline = arriba ? 'bottom' : 'top';
-        ctx.fillText(Number(val).toLocaleString('es-HN'), pt.x, pt.y + (arriba ? -8 : 8));
+        const off = (opt.size || 10) * 0.8;
+        ctx.fillText(Number(val).toLocaleString('es-HN'), pt.x, pt.y + (arriba ? -off : off));
       });
     });
     ctx.restore();
@@ -792,7 +924,8 @@ function renderGen(g){
   }).join('') : '';
 
   el.innerHTML = `
-    <button class="back-btn" onclick="showHome()">← Volver al resumen general</button>
+    <div class="page-actions"><button class="back-btn" style="padding:0" onclick="showHome()">← Volver al resumen general</button>
+      <button class="btn-inf" onclick="abrirInforme('gen', ${g})">📄 Informe del Generador ${g}</button></div>
     ${aviso}${sinAn}
     <div class="sec-title"><span>Generador ${g}</span> — indicadores principales · ${esc(fechaLarga(cg))}</div>
     <div class="gen-kpi-strip">
@@ -865,6 +998,640 @@ function renderGen(g){
 function setTipo(g,t){ genState[g].tipo = t; renderGen(g); }
 function setFase(g,f){ genState[g].fase = f; renderGen(g); }
 function setPeriodo(g,p){ genState[g].periodo = p; renderGen(g); }
+
+// ════════════════════════════════════════════════════════════
+// COMPARATIVA (datos, para el PDF)
+// ════════════════════════════════════════════════════════════
+function compararGen(gk, cg){
+  const serie = CAMPANAS.filter(c => lecGen(c, gk));
+  const idx = serie.findIndex(c => c.k === cg.k);
+  const prev = idx > 0 ? serie[idx-1] : null;
+  const base = cg.k > BASE_K ? camp(BASE_K) : null;
+  const L = lecGen(cg, gk), P = lecGen(prev, gk), B = lecGen(base, gk);
+  if (!P) return null;
+  const hist = serie.slice(0, idx);
+  const dT = (L.temp_estator != null && P.temp_estator != null) ? L.temp_estator - P.temp_estator : null;
+  let altos = 0;
+  const filas = FASES.map(f => {
+    const m = L.maquina[f], mp = P.maquina[f], mb = B?.maquina[f];
+    const dPrev = delta(m.qm_pos, mp.qm_pos), dBase = delta(m.qm_pos, mb?.qm_pos);
+    const dNeg = delta(m.qm_neg, mp.qm_neg), dNqn = delta(m.nqn_pos, mp.nqn_pos);
+    if (dPrev.cls === 'dl-d' || dBase.cls === 'dl-d') altos++;
+    const maxH = Math.max(...hist.map(c => lecGen(c, gk).maquina[f].qm_pos ?? -Infinity));
+    return { f, m, mp, mb, dPrev, dBase, dNeg, dNqn, r: ratio(m.qm_pos, m.qm_neg),
+             nuevoMax: m.qm_pos != null && hist.length > 0 && m.qm_pos > maxH };
+  });
+  return { prev, base, L, P, B, dT, altos, filas, nMes: mesesEntre(prev, cg) };
+}
+
+// ════════════════════════════════════════════════════════════
+// INFORMES PDF
+// ════════════════════════════════════════════════════════════
+const PW = 216, PH = 279, MX = 14;               // carta, mm
+const C_NAVY = [31,56,100], C_TXT = [40,40,40], C_MUT = [110,110,105];
+const C_DEL = { 'dl-d':[160,30,30], 'dl-w':[150,90,10], 'dl-ok':[40,110,20], 'dl-n':[110,110,105] };
+const C_NIV = n => { const b = nivBadge(n); return b==='badge-danger'?[160,30,30]:b==='badge-warn'?[150,90,10]:b==='badge-ok'?[40,110,20]:C_MUT; };
+
+// Las fuentes estándar del PDF no traen flechas ni algunos símbolos: se reemplazan
+const PDF_MAP = {'−':'-','→':'->','↓':'(baja)','↑':'(sube)','▲':'(sube)','▼':'(baja)','✓':'OK','≥':'>=','≤':'<=','≈':'~','⚠':'!'};
+const pt = s => String(s ?? '').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/[−→↓↑▲▼✓≥≤≈⚠]/g, ch => PDF_MAP[ch]);
+const pdel = d => d.p == null ? '-' : `${d.p>0?'+':''}${d.p.toFixed(1)} %`;
+
+// Renderiza un gráfico de Chart.js fuera de pantalla y devuelve la imagen
+function chartImg(config, w = 1400, h = 520){
+  const holder = document.createElement('div');
+  holder.style.cssText = `position:fixed;left:-20000px;top:0;width:${w}px;height:${h}px`;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  holder.appendChild(cv); document.body.appendChild(holder);
+  config.options = Object.assign({ responsive:false, animation:false, devicePixelRatio:1 }, config.options || {});
+  // Fondo blanco (el JPEG no tiene transparencia)
+  config.plugins = (config.plugins || []).concat([{ id:'fondo', beforeDraw: c => { const x = c.ctx; x.save(); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.restore(); } }]);
+  const ch = new Chart(cv, config);
+  const url = cv.toDataURL('image/jpeg', 0.88);
+  ch.destroy(); holder.remove();
+  return url;
+}
+
+function chartFaseImg(gk, cg, tipo, f, periodo){
+  const isNQN = tipo === 'NQN';
+  let pts = CAMPANAS.filter(c => c.k <= cg.k && lecGen(c, gk)).map(c => ({ c, L: lecGen(c, gk) }));
+  if (periodo === 'base') pts = pts.filter(p => p.c.k >= BASE_K);
+  if (isNQN) pts = pts.filter(p => p.L.maquina[f].nqn_pos != null);
+  if (!pts.length) return null;
+  const kp = isNQN ? 'nqn_pos' : 'qm_pos', kn = isNQN ? 'nqn_neg' : 'qm_neg';
+  const ds = (k, col, lbl, w) => ({ label:lbl, data:pts.map(p => p.L.maquina[f][k] ?? null), borderColor:col, backgroundColor:col,
+    borderWidth:w, cubicInterpolationMode:'monotone', spanGaps:true, pointRadius:6, pointBackgroundColor:col, pointBorderColor:'#fff', pointBorderWidth:2 });
+  return chartImg({
+    type:'line', plugins:[valueLabels],
+    data:{ labels: pts.map(p => etiqueta(p.c)), datasets:[ ds(kp, COL_POS, tipo+'+', 4), ds(kn, COL_NEG, tipo+'-', 3) ] },
+    options:{ layout:{ padding:{ top:24, left:10, right:20 } },
+      plugins:{ valueLabels:{ enabled:true, size:17 }, legend:{ display:true, position:'top', align:'end', labels:{ font:{size:18}, boxWidth:28, boxHeight:3 } } },
+      scales:{ x:{ offset:true, grid:{color:'#E6E5DF'}, ticks:{ color:'#333', font:{size:17, weight:'600'}, maxRotation:0, autoSkip:false } },
+               y:{ grace:'10%', grid:{color:'#E6E5DF'}, ticks:{ color:'#666', font:{size:16}, callback:x => x + (isNQN ? '' : ' mV') },
+                   title:{ display:true, text: isNQN ? 'NQN' : 'Qm (mV)', color:'#444', font:{size:16} } } } }
+  });
+}
+
+function chartComparativoImg(){
+  return chartImg({
+    type:'bar', plugins:[valueLabels],
+    data:{ labels:['Fase A','Fase B','Fase C'],
+      datasets: GK.map((g,i) => { const L = lecGen(campanaGen(g), g);
+        return { label:'Generador '+(i+1), data: FASES.map(f => L?.maquina[f].qm_pos ?? null), backgroundColor: GEN_COLORS[i], borderRadius:6 }; }) },
+    options:{ layout:{ padding:{ top:28 } },
+      plugins:{ valueLabels:{ enabled:true, allAbove:true, size:17 }, legend:{ display:true, position:'top', align:'end', labels:{ font:{size:18} } } },
+      scales:{ x:{ grid:{color:'#E6E5DF'}, ticks:{ color:'#333', font:{size:18, weight:'600'} } },
+               y:{ beginAtZero:true, grace:'10%', grid:{color:'#E6E5DF'}, ticks:{ color:'#666', font:{size:16}, callback:x => x+' mV' } } } }
+  }, 1400, 500);
+}
+
+// ── Estructura del documento ──
+// Logo liviano para los PDF: el PNG original se guardaría sin comprimir (≈1.7 MB)
+let LOGO_PDF = null;
+(() => { const im = new Image(); im.onload = () => {
+  const c = document.createElement('canvas'); c.width = 520; c.height = Math.round(520 * im.height / im.width);
+  const x = c.getContext('2d'); x.fillStyle = '#F7F8FA'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+  LOGO_PDF = c.toDataURL('image/jpeg', 0.9); }; im.src = LOGO; })();
+
+function nuevoDoc(){ return new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'letter' }); }
+
+function encabezado(doc, titulo, subtitulo, pill, codigo){
+  const hoy = new Date();
+  doc.setFillColor(247,248,250); doc.rect(0, 0, PW, 30, 'F');
+  doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(0, 30, PW, 30);
+  try { if (LOGO_PDF) doc.addImage(LOGO_PDF, 'JPEG', 10, 4, 34, 22); else doc.addImage(LOGO, 'PNG', 10, 4, 34, 22, undefined, 'FAST'); } catch(e) {}
+  doc.setTextColor(...C_NAVY); doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Bijao Electric Company S.A. de C.V.', 48, 11);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...C_MUT);
+  doc.text('Departamento de Mantenimiento Eléctrico', 48, 16.5);
+  doc.text('Río Bijao, Km 20 Carr. Puerto Cortés · Choloma, Cortés · Honduras', 48, 21.5);
+  doc.setFontSize(7.5); doc.text('Fecha de emisión', PW-MX, 9, {align:'right'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...C_NAVY);
+  doc.text(hoy.toLocaleDateString('es-HN',{day:'numeric',month:'long',year:'numeric'}), PW-MX, 13.5, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C_MUT);
+  doc.text('Código de referencia', PW-MX, 19, {align:'right'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...C_NAVY);
+  doc.text(codigo, PW-MX, 23.5, {align:'right'});
+
+  doc.setFillColor(240,244,250); doc.rect(0, 30, PW, 19, 'F');
+  doc.setFontSize(14); doc.setTextColor(12,55,103); doc.text(pt(titulo), MX, 39);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...C_MUT); doc.text(pt(subtitulo), MX, 45);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  const pw = doc.getTextWidth(pill) + 10;
+  doc.setFillColor(12,68,124); doc.roundedRect(PW-MX-pw, 34.5, pw, 8, 4, 4, 'F');
+  doc.setTextColor(255,255,255); doc.text(pill, PW-MX-pw/2, 39.8, {align:'center'});
+  return 56;
+}
+
+function asegurar(doc, y, h){ if (y + h > PH - 18) { doc.addPage(); return 18; } return y; }
+
+function seccion(doc, y, txt){
+  y = asegurar(doc, y, 14);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...C_NAVY);
+  doc.text(pt(txt).toUpperCase(), MX, y);
+  doc.setDrawColor(213,232,240); doc.setLineWidth(0.6); doc.line(MX, y+1.8, PW-MX, y+1.8);
+  return y + 6;
+}
+
+function parrafo(doc, y, txt, size = 9, color = C_TXT){
+  doc.setFont('helvetica','normal'); doc.setFontSize(size); doc.setTextColor(...color);
+  const lines = doc.splitTextToSize(pt(txt), PW - 2*MX);
+  for (const ln of lines) { y = asegurar(doc, y, 5); doc.text(ln, MX, y); y += size * 0.45; }
+  return y + 2;
+}
+
+function tabla(doc, y, head, body, opts = {}){
+  doc.autoTable(Object.assign({
+    startY: y, head:[head.map(pt)], body: body.map(r => r.map(c => typeof c === 'object' && c !== null ? Object.assign({}, c, {content: pt(c.content)}) : pt(c))),
+    margin:{ left:MX, right:MX, top:18, bottom:18 }, theme:'grid', rowPageBreak:'avoid',
+    styles:{ font:'helvetica', fontSize:8, cellPadding:1.8, textColor:C_TXT, lineColor:[225,224,217], lineWidth:0.2, valign:'top' },
+    headStyles:{ fillColor:C_NAVY, textColor:255, fontStyle:'bold', fontSize:7.5 },
+    alternateRowStyles:{ fillColor:[248,248,246] }
+  }, opts));
+  return doc.lastAutoTable.finalY + 6;
+}
+
+function imagen(doc, y, url, titulo){
+  if (!url) return y;
+  const w = PW - 2*MX, h = w * 520/1400;
+  y = asegurar(doc, y, h + 8);
+  if (titulo) { doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...C_NAVY); doc.text(pt(titulo), MX, y); y += 2; }
+  doc.addImage(url, 'JPEG', MX, y, w, h);
+  return y + h + 5;
+}
+
+function firma(doc, y, sup){
+  y = asegurar(doc, y + 8, 28);
+  doc.setDrawColor(200,210,220); doc.setLineWidth(0.3); doc.line(MX, y, PW-MX, y); y += 6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(60,70,80);
+  doc.text('BECO — Bijao Electric Company S.A. de C.V.', MX, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C_MUT);
+  doc.text('Departamento de Mantenimiento Eléctrico', MX, y+5);
+  doc.text('Metodología IRIS Power / IEEE 1434', MX, y+10);
+  if (sup) {
+    doc.setDrawColor(80,90,100); doc.line(PW-75, y+4, PW-MX, y+4);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(30,30,30);
+    doc.text(pt(sup.nombre), PW-44.5, y+9, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C_MUT);
+    doc.text(pt(sup.cargo || ''), PW-44.5, y+13.5, {align:'center'});
+  }
+}
+
+function pies(doc, codigo){
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`${codigo} · Página ${i} de ${n}`, PW-MX, PH-8, {align:'right'});
+    doc.text('Documento generado desde BECO · Descargas Parciales', MX, PH-8);
+  }
+}
+
+// ── Informe general (Resumen) ──
+function pdfGeneral(sup){
+  const c = camp(SEL), codigo = `BECO-DP-${c.k}`;
+  const doc = nuevoDoc();
+  let y = encabezado(doc, 'Informe de Seguimiento de Descargas Parciales', 'Generadores G1, G2 y G3 · Resumen general', etiqueta(c), codigo);
+
+  y = seccion(doc, y, 'Estado de los generadores — ' + fechaLarga(c));
+  y = tabla(doc, y, ['Generador','Lectura','Temp. estátor','Bandera IRIS','Nivel de preocupación','Restricción operativa','Próxima prueba'],
+    GK.map((g,i) => { const cg = campanaGen(g), L = lecGen(cg, g), A = anGen(cg, g);
+      return [`Generador ${i+1}`, cg ? etiqueta(cg) : '-', L?.temp_estator != null ? L.temp_estator+' °C' : '-', L?.estado_alarma || '-',
+        { content: A?.nivel_preocupacion || 'Sin análisis', styles:{ fontStyle:'bold', textColor: C_NIV(A?.nivel_preocupacion) } },
+        A?.restriccion_operativa || '-', A?.proxima_prueba || '-']; }));
+
+  y = seccion(doc, y, 'Última lectura — Qm+ / Qm- por fase (mV)');
+  y = tabla(doc, y, ['Generador','Fase A','Fase B','Fase C'],
+    GK.map((g,i) => { const L = lecGen(campanaGen(g), g);
+      return [`Generador ${i+1}`, ...FASES.map(f => L ? `${v(L.maquina[f].qm_pos)} / ${v(L.maquina[f].qm_neg)}` : '-')]; }),
+    { columnStyles:{ 1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'center'} } });
+
+  y = seccion(doc, y, 'Comparativa Qm+ por fase');
+  y = imagen(doc, y, chartComparativoImg());
+
+  const hist = CAMPANAS.filter(x => x.k <= SEL && GK.some(g => anGen(x, g)?.resumen_corto)).slice(-5);
+  if (hist.length) {
+    y = seccion(doc, y, 'Historial de seguimiento');
+    y = tabla(doc, y, ['Generador', ...hist.map((x,i) => etiqueta(x) + (i===0?' (base)':''))],
+      GK.map((g,i) => [`Generador ${i+1}`, ...hist.map(x => anGen(x,g)?.resumen_corto || '-')]));
+  }
+
+  if (c.analisis?.comentario_resumen) {
+    y = seccion(doc, y, 'Comentario general');
+    y = parrafo(doc, y, c.analisis.comentario_resumen);
+  }
+
+  const acc = GK.flatMap((g,i) => (anGen(campanaGen(g), g)?.acciones || []).map(a => [`G${i+1}`, a]));
+  if (acc.length) {
+    y = seccion(doc, y, 'Acciones recomendadas para la próxima parada');
+    y = tabla(doc, y, ['Gen.','Acción'], acc, { columnStyles:{ 0:{ cellWidth:14, fontStyle:'bold', textColor:C_NAVY } } });
+  }
+
+  firma(doc, y, sup); pies(doc, codigo);
+  return { doc, codigo, nombre:`Informe_DP_General_${c.k}.pdf`,
+           asunto:`Informe de Descargas Parciales — ${etiqueta(c)} — Resumen general` };
+}
+
+// ── Informe por generador ──
+function pdfGenerador(g, op, sup){
+  const gk = 'G'+g, cg = campanaGen(gk), L = lecGen(cg, gk), A = anGen(cg, gk);
+  const codigo = `BECO-DP-${gk}-${cg.k}`;
+  const doc = nuevoDoc();
+  let y = encabezado(doc, `Informe de Descargas Parciales — Generador ${g}`,
+    'Seguimiento en línea · IRIS Power / IEEE 1434', etiqueta(cg), codigo);
+
+  y = seccion(doc, y, 'Indicadores principales — ' + fechaLarga(cg));
+  y = tabla(doc, y, ['Temp. estátor','Bandera IRIS','Nivel de preocupación','Restricción operativa','Próxima prueba'],
+    [[L.temp_estator != null ? L.temp_estator+' °C' : '-', L.estado_alarma || '-',
+      { content: A?.nivel_preocupacion || 'Sin análisis', styles:{ fontStyle:'bold', textColor: C_NIV(A?.nivel_preocupacion) } },
+      A?.restriccion_operativa || '-', A?.proxima_prueba || '-']]);
+  y = tabla(doc, y, ['Fase','Qm+ (mV)','Qm- (mV)','NQN+','NQN-','Ratio Qm+/Qm-'],
+    FASES.map(f => { const m = L.maquina[f], r = ratio(m.qm_pos, m.qm_neg);
+      return [`Fase ${f}`, v(m.qm_pos), v(m.qm_neg), v(m.nqn_pos), v(m.nqn_neg), r == null ? '-' : r.toFixed(2)]; }),
+    { columnStyles:{ 1:{halign:'center'},2:{halign:'center'},3:{halign:'center'},4:{halign:'center'},5:{halign:'center'} } });
+
+  if (op.sec.comparativa) {
+    const cmp = compararGen(gk, cg);
+    y = seccion(doc, y, 'Comparativa automática');
+    if (!cmp) y = parrafo(doc, y, 'Es la primera lectura registrada de este generador; no hay contra qué comparar.', 8.5, C_MUT);
+    else {
+      y = parrafo(doc, y, `Comparado contra ${etiqueta(cmp.prev)} (${cmp.nMes} ${cmp.nMes===1?'mes':'meses'} antes)` +
+        (cmp.B ? ` y contra la base ${etiqueta(cmp.base)}` : '') +
+        `. Temperatura ${v(cmp.P.temp_estator)} -> ${v(cmp.L.temp_estator)} °C` + (cmp.dT != null ? ` (${cmp.dT>0?'+':''}${cmp.dT} °C)` : '') +
+        `. ${cmp.altos ? cmp.altos + ' fase(s) con aumento mayor a ' + UMBRAL_ALTO + ' %.' : 'Ninguna fase supera +' + UMBRAL_ALTO + ' %.'}`, 8.5);
+      if (cmp.dT != null && Math.abs(cmp.dT) > UMBRAL_TEMP)
+        y = parrafo(doc, y, `Atención: la temperatura cambió ${Math.abs(cmp.dT)} °C; la comparación no es directa (el stress grading aumenta con la temperatura y los vacíos internos disminuyen).`, 8, [150,90,10]);
+      const cel = d => ({ content: pdel(d), styles:{ textColor: C_DEL[d.cls], fontStyle: d.cls === 'dl-n' ? 'normal' : 'bold' } });
+      y = tabla(doc, y, ['Fase','Qm+ actual','Anterior','vs anterior','Base','vs base','Qm- vs ant.','NQN+ vs ant.'],
+        cmp.filas.map(r => [`Fase ${r.f}`, `${v(r.m.qm_pos)} mV${r.nuevoMax ? '  (nuevo máximo)' : ''}`, v(r.mp.qm_pos), cel(r.dPrev),
+          cmp.B ? v(r.mb.qm_pos) : '-', cmp.B ? cel(r.dBase) : '-', cel(r.dNeg), r.m.nqn_pos != null && r.mp.nqn_pos != null ? cel(r.dNqn) : '-']),
+        { columnStyles:{ 2:{halign:'center'},3:{halign:'center'},4:{halign:'center'},5:{halign:'center'},6:{halign:'center'},7:{halign:'center'} } });
+      y = parrafo(doc, y, `Criterio: cambio menor a ${UMBRAL_NORMAL} % = variación normal; aumento de ${UMBRAL_NORMAL} a ${UMBRAL_ALTO} % = vigilar; aumento mayor a ${UMBRAL_ALTO} % = tendencia significativa.`, 7, C_MUT);
+    }
+  }
+
+  const graficas = [];
+  ['Qm','NQN'].forEach(t => FASES.forEach(f => { if (op.graf[t][f]) graficas.push([t, f]); }));
+  if (graficas.length) {
+    y = seccion(doc, y, 'Tendencia histórica' + (op.periodo === 'base' ? ' — desde la base (Sep 2025)' : ''));
+    graficas.forEach(([t, f]) => {
+      const img = chartFaseImg(gk, cg, t, f, op.periodo);
+      if (img) y = imagen(doc, y, img, `${t === 'Qm' ? 'Qm — Severidad (magnitud pico)' : 'NQN — Extensión del deterioro'} · Fase ${f}`);
+    });
+  }
+
+  const sinAn = 'Sin análisis registrado para esta lectura.';
+  if (op.sec.tendencia) {
+    y = seccion(doc, y, 'Análisis de la tendencia');
+    y = A?.tendencia?.length ? tabla(doc, y, ['Fase','Análisis'], A.tendencia.map(t => [`Fase ${t.fase}`, t.texto]),
+      { columnStyles:{ 0:{ cellWidth:16, fontStyle:'bold', textColor:C_NAVY } } }) : parrafo(doc, y, sinAn, 8.5, C_MUT);
+  }
+  if (op.sec.polaridad) {
+    y = seccion(doc, y, 'Análisis de polaridad y predominancia');
+    y = tabla(doc, y, ['Fase','Qm+ / Qm-','Ratio','Predominancia','Mecanismo'],
+      FASES.map(f => { const m = L.maquina[f], r = ratio(m.qm_pos, m.qm_neg), p = A?.polaridad?.find(x => x.fase === f);
+        return [`Fase ${f}`, `${v(m.qm_pos)} / ${v(m.qm_neg)} mV`,
+          { content: r == null ? '-' : r.toFixed(2), styles:{ fontStyle:'bold', textColor: r>=2 ? [160,30,30] : r>=1.4 ? [150,90,10] : [40,110,20] } },
+          p?.pred || '-', p?.mecanismo || '']; }),
+      { columnStyles:{ 0:{ cellWidth:16, fontStyle:'bold', textColor:C_NAVY }, 1:{ cellWidth:28 }, 2:{ cellWidth:14, halign:'center' }, 3:{ cellWidth:36 } } });
+  }
+  if (op.sec.prpd) {
+    y = seccion(doc, y, 'Interpretación del patrón PRPD');
+    y = A?.fuentes?.length ? tabla(doc, y, ['Fuente','Severidad','Polaridad','Posición','Efecto temp.','Descripción'],
+      A.fuentes.map(f => [f.nombre, { content: f.severidad, styles:{ fontStyle:'bold', textColor: f.tipo==='danger'?[160,30,30]:f.tipo==='warn'?[150,90,10]:[40,110,20] } },
+        f.polaridad, f.angulo, f.efecto_temp, f.descripcion]),
+      { columnStyles:{ 0:{ cellWidth:34, fontStyle:'bold' }, 1:{ cellWidth:24 }, 2:{ cellWidth:26 }, 3:{ cellWidth:18 }, 4:{ cellWidth:23 } } })
+      : parrafo(doc, y, sinAn, 8.5, C_MUT);
+  }
+  if (op.sec.sistema) {
+    y = seccion(doc, y, 'Análisis del sistema (Total System)');
+    y = L.sistema ? tabla(doc, y, ['Fase','NQN+ / NQN-','Qm+ / Qm- (mV)','Estado','Interpretación'],
+      FASES.map(f => { const s = L.sistema[f] || {}, si = A?.sistema?.find(x => x.fase === f);
+        return [`Fase ${f}`, `${v(s.nqn_pos)} / ${v(s.nqn_neg)}`, `${v(s.qm_pos)} / ${v(s.qm_neg)}`,
+          { content: s.estado || '-', styles:{ fontStyle:'bold', textColor: si?.nivel==='danger'?[160,30,30]:si?.nivel==='warn'?[150,90,10]:[40,110,20] } },
+          si?.interpretacion || '']; }),
+      { columnStyles:{ 0:{ cellWidth:16, fontStyle:'bold', textColor:C_NAVY }, 1:{ cellWidth:24 }, 2:{ cellWidth:26 }, 3:{ cellWidth:22 } } })
+      : parrafo(doc, y, 'Esta lectura no tiene valores del Total System.', 8.5, C_MUT);
+  }
+  if (op.sec.acciones) {
+    y = seccion(doc, y, 'Acciones recomendadas');
+    y = A?.acciones?.length ? tabla(doc, y, ['#','Acción'], A.acciones.map((a,i) => [String(i+1), a]),
+      { columnStyles:{ 0:{ cellWidth:8, fontStyle:'bold', textColor:C_NAVY, halign:'center' } } }) : parrafo(doc, y, 'Sin acciones registradas.', 8.5, C_MUT);
+  }
+
+  firma(doc, y, sup); pies(doc, codigo);
+  return { doc, codigo, nombre:`Informe_DP_${gk}_${cg.k}.pdf`,
+           asunto:`Informe de Descargas Parciales — ${etiqueta(cg)} — Generador ${g}` };
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL DE INFORME (opciones → vista previa / correo)
+// ════════════════════════════════════════════════════════════
+let INF = null;   // { tipo:'general'|'gen', g }
+let EXTRA = [];
+
+function supervisorDefault(){
+  const u = (account?.username || '').toLowerCase();
+  return (CONFIG?.supervisores || []).find(s => (s.correo||'').toLowerCase() === u)?.id || '';
+}
+
+function abrirInforme(tipo, g){
+  if (!CONFIG) { alert('No se pudo leer la configuración. Usa Recargar.'); return; }
+  INF = { tipo, g }; EXTRA = [];
+  const c = tipo === 'general' ? camp(SEL) : campanaGen('G'+g);
+  document.getElementById('inf-titulo').textContent = tipo === 'general'
+    ? `Informe general — ${etiqueta(c)}` : `Informe Generador ${g} — ${etiqueta(c)}`;
+  document.getElementById('inf-opciones').classList.toggle('hidden', tipo !== 'gen');
+  document.getElementById('inf-sup').innerHTML = '<option value="">— Seleccionar —</option>' +
+    CONFIG.supervisores.map(s => `<option value="${esc(s.id)}">${esc(s.nombre)}</option>`).join('');
+  document.getElementById('inf-sup').value = supervisorDefault();
+  if (tipo === 'gen') {
+    const st = genState[g];
+    document.querySelectorAll('#inf-opciones input[type=checkbox]').forEach(x => x.checked = false);
+    // Por defecto: lo que estás viendo en pantalla + todas las secciones
+    const fases = st.fase === 'Todas' ? FASES : [st.fase];
+    fases.forEach(f => document.getElementById(`op-${st.tipo}-${f}`).checked = true);
+    document.querySelectorAll('#inf-opciones .op-sec').forEach(x => x.checked = true);
+    document.getElementById('op-periodo').value = st.periodo;
+    syncTodas();
+  }
+  document.getElementById('inf-paso1').classList.remove('hidden');
+  document.getElementById('inf-paso2').classList.add('hidden');
+  infMsg('');
+  document.getElementById('modal-informe').classList.add('open');
+}
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+function infMsg(t, tipo){ const e = document.getElementById('inf-msg'); e.textContent = t; e.className = 'modal-msg ' + (tipo || ''); }
+
+function toggleTodas(t){
+  const on = document.getElementById(`op-${t}-T`).checked;
+  FASES.forEach(f => document.getElementById(`op-${t}-${f}`).checked = on);
+}
+function syncTodas(){
+  ['Qm','NQN'].forEach(t => document.getElementById(`op-${t}-T`).checked = FASES.every(f => document.getElementById(`op-${t}-${f}`).checked));
+}
+function marcarTodo(on){
+  document.querySelectorAll('#inf-opciones input[type=checkbox]').forEach(x => x.checked = on);
+}
+
+function leerOpciones(){
+  const ck = id => document.getElementById(id).checked;
+  return {
+    graf: { Qm: Object.fromEntries(FASES.map(f => [f, ck(`op-Qm-${f}`)])), NQN: Object.fromEntries(FASES.map(f => [f, ck(`op-NQN-${f}`)])) },
+    sec: { comparativa:ck('op-comparativa'), tendencia:ck('op-tendencia'), polaridad:ck('op-polaridad'), prpd:ck('op-prpd'), sistema:ck('op-sistema'), acciones:ck('op-acciones') },
+    periodo: document.getElementById('op-periodo').value
+  };
+}
+
+function construirInforme(){
+  const supId = document.getElementById('inf-sup').value;
+  if (!supId) { infMsg('Selecciona el supervisor que firma el informe.', 'err'); return null; }
+  const sup = CONFIG.supervisores.find(s => s.id === supId);
+  return INF.tipo === 'general' ? pdfGeneral(sup) : pdfGenerador(INF.g, leerOpciones(), sup);
+}
+
+async function guardarInformeOneDrive(r, blob){
+  try { await subirArchivo('informes/' + r.nombre, blob, 'application/pdf'); return true; }
+  catch(e) { console.warn('No se guardó en OneDrive:', e); return false; }
+}
+
+async function vistaPrevia(){
+  const w = window.open('', '_blank');               // se abre ya para que el navegador no la bloquee
+  if (w) w.document.write('<p style="font-family:sans-serif;padding:2rem;color:#555">Generando informe…</p>');
+  try {
+    infMsg('Generando PDF…');
+    const r = construirInforme(); if (!r) { if (w) w.close(); return; }
+    const blob = r.doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    if (w) w.location.href = url; else window.open(url, '_blank');
+    const ok = await guardarInformeOneDrive(r, blob);
+    infMsg(ok ? `Listo. También se guardó en OneDrive: informes/${r.nombre}` : 'Listo. (No se pudo guardar la copia en OneDrive.)', 'ok');
+  } catch(e) { if (w) w.close(); infMsg('Error generando el informe: ' + e.message, 'err'); }
+}
+
+function pasoCorreo(){
+  const supId = document.getElementById('inf-sup').value;
+  if (!supId) { infMsg('Selecciona el supervisor que firma el informe.', 'err'); return; }
+  const nombres = Object.fromEntries((CONFIG.supervisores || []).map(s => [String(s.correo).toLowerCase(), s.nombre]));
+  document.getElementById('dest-fijos').innerHTML = (CONFIG.destinatarios_fijos || []).map((e, i) => `
+    <label class="dest-row"><input type="checkbox" class="dest-ck" value="${esc(e)}" checked>
+      <span><span class="dest-n">${esc(nombres[e.toLowerCase()] || e)}</span><br><span class="dest-c">${esc(e)}</span></span></label>`).join('');
+  renderExtra();
+  document.getElementById('inf-paso1').classList.add('hidden');
+  document.getElementById('inf-paso2').classList.remove('hidden');
+  infMsg('');
+}
+function volverPaso1(){ document.getElementById('inf-paso2').classList.add('hidden'); document.getElementById('inf-paso1').classList.remove('hidden'); infMsg(''); }
+
+function agregarExtra(){
+  const i = document.getElementById('dest-extra'); const e = i.value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { infMsg('Correo no válido.', 'err'); return; }
+  if (!EXTRA.includes(e)) EXTRA.push(e);
+  i.value = ''; infMsg(''); renderExtra();
+}
+function quitarExtra(e){ EXTRA = EXTRA.filter(x => x !== e); renderExtra(); }
+function renderExtra(){
+  document.getElementById('dest-extra-lista').innerHTML = EXTRA.map(e =>
+    `<span class="dest-tag">${esc(e)} <button onclick="quitarExtra('${esc(e)}')">×</button></span>`).join('');
+}
+
+async function enviarInforme(){
+  const btn = document.getElementById('btn-enviar');
+  const dest = [...document.querySelectorAll('.dest-ck:checked')].map(x => x.value).concat(EXTRA);
+  if (!dest.length) { infMsg('Selecciona al menos un destinatario.', 'err'); return; }
+  btn.disabled = true;
+  try {
+    infMsg('Generando PDF…');
+    const r = construirInforme(); if (!r) return;
+    const blob = r.doc.output('blob');
+    if (blob.size > 3 * 1024 * 1024)
+      throw new Error(`El PDF pesa ${(blob.size/1048576).toFixed(1)} MB y el límite del correo es 3 MB. Quita algunas gráficas e intenta de nuevo.`);
+    const b64 = r.doc.output('datauristring').split(',')[1];
+    const sup = CONFIG.supervisores.find(s => s.id === document.getElementById('inf-sup').value);
+    const c = INF.tipo === 'general' ? camp(SEL) : campanaGen('G'+INF.g);
+    const niveles = (INF.tipo === 'general' ? GK : ['G'+INF.g]).map(g => {
+      const A = anGen(campanaGen(g, c.k), g);
+      return `<li><b>Generador ${g.slice(1)}:</b> ${esc(A?.nivel_preocupacion || 'sin análisis')} · ${esc(A?.proxima_prueba || '')}</li>`; }).join('');
+    infMsg('Enviando correo…');
+    await graphPost('/me/sendMail', {
+      message: {
+        subject: r.asunto,
+        body: { contentType:'HTML', content:
+          `<p>Estimados,</p><p>Se adjunta el informe de seguimiento de descargas parciales correspondiente a la lectura de <b>${esc(fechaLarga(c))}</b>.</p>
+           <ul>${niveles}</ul>
+           <p>Código de referencia: ${esc(r.codigo)}</p>
+           <p>Saludos,<br><b>${esc(sup.nombre)}</b><br>${esc(sup.cargo || '')}<br>Bijao Electric Company S.A. de C.V.</p>` },
+        toRecipients: dest.map(e => ({ emailAddress:{ address:e } })),
+        attachments: [{ '@odata.type':'#microsoft.graph.fileAttachment', name:r.nombre, contentType:'application/pdf', contentBytes:b64 }]
+      },
+      saveToSentItems: true
+    });
+    await guardarInformeOneDrive(r, blob);
+    infMsg(`✓ Informe enviado a ${dest.length} destinatario${dest.length>1?'s':''} y guardado en OneDrive.`, 'ok');
+  } catch(e) { infMsg('Error: ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+// ════════════════════════════════════════════════════════════
+// ESCRITURA EN ONEDRIVE
+// ════════════════════════════════════════════════════════════
+async function subirArchivo(path, blob, tipo){
+  const r = await fetch(itemUrl(path) + ':/content', {
+    method:'PUT', headers:{ Authorization:'Bearer ' + await getToken(), 'Content-Type': tipo }, body: blob });
+  if (!r.ok) throw new Error(`OneDrive respondió ${r.status} al guardar ${path}`);
+  return r.json();
+}
+
+async function graphPost(url, body){
+  const r = await fetch('https://graph.microsoft.com/v1.0' + url, {
+    method:'POST', headers:{ Authorization:'Bearer ' + await getToken(), 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) { let m = ''; try { m = (await r.json())?.error?.message || ''; } catch {} throw new Error(`Correo no enviado (${r.status}) ${m}`); }
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════
+// SUBIR LECTURA (campaña nueva o PDFs a una existente)
+// ════════════════════════════════════════════════════════════
+let SUB = null;
+
+function abrirSubir(){
+  SUB = { lectura:null, analisis:null, pdfs:{}, k:null, ok:false };
+  ['sub-lectura','sub-analisis','sub-G1','sub-G2','sub-G3'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('#modal-subir .file-lbl').forEach(e => { e.textContent = 'Sin archivo'; e.className = 'file-lbl'; });
+  document.getElementById('sub-camp').innerHTML = '<option value="">— Elegir campaña existente —</option>' +
+    [...CAMPANAS].reverse().map(c => `<option value="${c.k}">${esc(etiqueta(c))}</option>`).join('');
+  document.getElementById('sub-camp-wrap').classList.remove('hidden');
+  document.getElementById('sub-resumen').innerHTML = '';
+  document.getElementById('btn-subir').disabled = true;
+  subMsg('');
+  document.getElementById('modal-subir').classList.add('open');
+}
+function subMsg(t, tipo){ const e = document.getElementById('sub-msg'); e.textContent = t; e.className = 'modal-msg ' + (tipo || ''); }
+
+async function leerArchivoJSON(file){
+  try { return JSON.parse(await file.text()); } catch { throw new Error(`${file.name} no es un JSON válido.`); }
+}
+
+async function selArchivo(tipo, input){
+  const f = input.files[0];
+  const lbl = document.getElementById('lbl-' + input.id);
+  if (!f) { lbl.textContent = 'Sin archivo'; lbl.className = 'file-lbl'; delete SUB.pdfs[tipo]; SUB[tipo] = null; return validarSubida(); }
+  lbl.textContent = f.name; lbl.className = 'file-lbl ok';
+  try {
+    if (tipo === 'lectura' || tipo === 'analisis') SUB[tipo] = await leerArchivoJSON(f);
+    else {
+      if (f.type !== 'application/pdf' && !/\.pdf$/i.test(f.name)) throw new Error(`${f.name} no es un PDF.`);
+      SUB.pdfs[tipo] = f;
+    }
+  } catch(e) { lbl.className = 'file-lbl err'; SUB[tipo] = null; subMsg(e.message, 'err'); }
+  validarSubida();
+}
+
+function validarLectura(L){
+  const err = [];
+  if (!/^\d{4}-\d{2}$/.test(L.campana || '')) err.push('"campana" debe tener formato AAAA-MM.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(L.fecha_lectura || '')) err.push('"fecha_lectura" debe tener formato AAAA-MM-DD.');
+  if (L.fecha_lectura && L.campana && !L.fecha_lectura.startsWith(L.campana)) err.push('"fecha_lectura" no coincide con el mes de "campana".');
+  if (!L.etiqueta) err.push('Falta "etiqueta" (ej. "Oct 2026").');
+  const gens = Object.keys(L.generadores || {});
+  if (!gens.length) err.push('No hay generadores en "generadores".');
+  gens.forEach(g => {
+    if (!GK.includes(g)) { err.push(`Generador desconocido: ${g}.`); return; }
+    const G = L.generadores[g];
+    if (G.temp_estator != null && typeof G.temp_estator !== 'number') err.push(`${g}: temp_estator debe ser número.`);
+    FASES.forEach(f => {
+      const m = G.maquina?.[f];
+      if (!m) { err.push(`${g}: falta maquina.${f}.`); return; }
+      ['qm_pos','qm_neg','nqn_pos','nqn_neg'].forEach(k => { if (m[k] != null && typeof m[k] !== 'number') err.push(`${g} fase ${f}: ${k} debe ser número.`); });
+      if (m.qm_pos == null || m.qm_neg == null) err.push(`${g} fase ${f}: faltan Qm+ o Qm-.`);
+    });
+  });
+  return err;
+}
+
+function validarSubida(){
+  subMsg('');
+  const res = document.getElementById('sub-resumen');
+  const errs = [], avisos = [];
+  let k = null;
+  if (SUB.lectura) {
+    errs.push(...validarLectura(SUB.lectura));
+    k = SUB.lectura.campana;
+    document.getElementById('sub-camp-wrap').classList.add('hidden');
+  } else {
+    document.getElementById('sub-camp-wrap').classList.remove('hidden');
+    k = document.getElementById('sub-camp').value || null;
+    if (SUB.analisis) errs.push('Para subir un analisis.json también necesitas su lectura.json.');
+  }
+  if (SUB.analisis && SUB.lectura) {
+    if (SUB.analisis.campana !== SUB.lectura.campana) errs.push(`analisis.json es de ${SUB.analisis.campana} y lectura.json de ${SUB.lectura.campana}.`);
+    Object.keys(SUB.analisis.generadores || {}).forEach(g => { if (!SUB.lectura.generadores?.[g]) avisos.push(`analisis.json trae ${g}, pero lectura.json no lo midió.`); });
+    if (!SUB.analisis.comentario_resumen) avisos.push('analisis.json no trae "comentario_resumen".');
+  }
+  if (SUB.lectura && !SUB.analisis) avisos.push('Sin analisis.json: la lectura se verá solo con números hasta que subas el análisis.');
+  const existe = k && camp(k);
+  if (existe && SUB.lectura) avisos.push(`La campaña ${k} ya existe. Sus archivos actuales se copiarán a respaldos/ antes de reemplazarlos.`);
+  Object.keys(SUB.pdfs).forEach(g => {
+    const medido = SUB.lectura ? SUB.lectura.generadores?.[g] : lecGen(camp(k), g);
+    if (k && !medido) avisos.push(`El PDF de ${g} se sube, pero ${g} no tiene lectura en ${k}.`);
+  });
+  if (!SUB.lectura && !Object.keys(SUB.pdfs).length) { res.innerHTML = ''; document.getElementById('btn-subir').disabled = true; return; }
+  if (!k) errs.push('Elige la campaña a la que pertenecen los PDF.');
+
+  // Resumen en texto para confirmar
+  let html = '';
+  if (k) {
+    const L = SUB.lectura;
+    html += `<div class="sub-k">Campaña <b>${esc(k)}</b>${L ? ` · ${esc(L.etiqueta || '')} · fecha ${esc(L.fecha_lectura || '')}` : ' (existente)'}</div>`;
+    if (L && !errs.length) html += `<table class="cmp-table" style="margin:.5rem 0"><thead><tr><th>Gen.</th><th>Temp.</th><th>Qm+ A / B / C (mV)</th><th>Bandera</th><th>PDF IRIS</th></tr></thead><tbody>` +
+      Object.entries(L.generadores).map(([g, G]) => `<tr><td><b>${g}</b></td><td>${v(G.temp_estator)} °C</td>
+        <td>${FASES.map(f => v(G.maquina[f].qm_pos)).join(' / ')}</td><td>${esc(G.estado_alarma || '—')}</td>
+        <td>${SUB.pdfs[g] ? '✓ se sube' : (camp(k)?.archivos[`IRIS_${g}_${k}.pdf`] ? 'ya existe' : '—')}</td></tr>`).join('') + '</tbody></table>';
+    if (!L) html += `<div style="font-size:12px;margin:.5rem 0">PDF a subir: ${Object.keys(SUB.pdfs).map(g => `<b>IRIS_${g}_${esc(k)}.pdf</b>`).join(', ')}</div>`;
+  }
+  html += errs.map(e => `<div class="sub-err">✕ ${esc(e)}</div>`).join('') + avisos.map(a => `<div class="sub-av">⚠ ${esc(a)}</div>`).join('');
+  res.innerHTML = html;
+  SUB.k = k; SUB.ok = !errs.length;
+  document.getElementById('btn-subir').disabled = !SUB.ok;
+}
+
+async function confirmarSubida(){
+  if (!SUB?.ok) return;
+  const btn = document.getElementById('btn-subir'); btn.disabled = true;
+  const k = SUB.k, dir = `campanas/${k}/`;
+  try {
+    const existente = camp(k);
+    if (existente && SUB.lectura) {
+      subMsg('Respaldando archivos actuales…');
+      const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+      for (const n of ['lectura.json','analisis.json']) {
+        const it = existente.archivos[n]; if (!it) continue;
+        const blob = await (await fetch(it['@microsoft.graph.downloadUrl'])).blob();
+        await subirArchivo(`respaldos/${k}_${n.replace('.json','')}_${ts}.json`, blob, 'application/json');
+      }
+    }
+    if (SUB.lectura) {
+      const L = SUB.lectura;
+      Object.keys(L.generadores).forEach(g => { L.generadores[g].reporte_iris = `IRIS_${g}_${k}.pdf`; });
+      subMsg('Subiendo lectura.json…');
+      await subirArchivo(dir + 'lectura.json', new Blob([JSON.stringify(L, null, 2)], {type:'application/json'}), 'application/json');
+    }
+    if (SUB.analisis) {
+      subMsg('Subiendo analisis.json…');
+      await subirArchivo(dir + 'analisis.json', new Blob([JSON.stringify(SUB.analisis, null, 2)], {type:'application/json'}), 'application/json');
+    }
+    for (const [g, f] of Object.entries(SUB.pdfs)) {
+      subMsg(`Subiendo IRIS_${g}_${k}.pdf…`);
+      await subirArchivo(dir + `IRIS_${g}_${k}.pdf`, f, 'application/pdf');
+    }
+    subMsg('✓ Todo subido. Actualizando la app…', 'ok');
+    SEL = SUB.lectura ? k : SEL;
+    setTimeout(() => { cerrarModal('modal-subir'); recargar(); }, 900);
+  } catch(e) {
+    subMsg('Error: ' + e.message + '. Revisa la carpeta en OneDrive antes de reintentar.', 'err');
+    btn.disabled = false;
+  }
+}
 
 // ════════════════════════════════════════════════════════════
 // INICIO
